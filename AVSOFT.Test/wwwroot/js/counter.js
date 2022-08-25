@@ -1,30 +1,43 @@
 ﻿let rootElement = document.getElementById("root");
 let toolbar = createToolbar();
 let table = createTable();
-let modal = createModal()
+let modal = createAddModal();
+let groupingCountersModal = createGroupingCountersModal();
 rootElement.appendChild(toolbar);
 rootElement.appendChild(table);
-rootElement.appendChild(modal)
+rootElement.appendChild(modal);
+rootElement.appendChild(groupingCountersModal);
 refreshPager();
-refreshTable(0)
+refreshTable(0);
 
 function createToolbar() {
     let container = document.createElement("div");
 
-    let buttonRefresh = document.createElement("button");
-    buttonRefresh.append('Refresh');
-    buttonRefresh.onclick = () => refreshTable(0);
-    buttonRefresh.className = 'btn btn-secondary';
+    let refreshButton = document.createElement("button");
+    refreshButton.append("Refresh");
+    refreshButton.onclick = () => refreshTable(0);
+    refreshButton.className = "btn btn-secondary";
 
-    let buttonAdd = document.createElement("button")
-    buttonAdd.append('Add');
-    buttonAdd.onclick = () => createModal();
-    buttonAdd.className = 'btn btn-primary';
-    buttonAdd.setAttribute('data-bs-toggle', 'modal');
-    buttonAdd.setAttribute('data-bs-target', '#add-modal');
+    let addButton = document.createElement("button")
+    addButton.append("Add");
+    addButton.onclick = () => createAddModal();
+    addButton.className = "btn btn-primary";
+    addButton.setAttribute("data-bs-toggle", "modal");
+    addButton.setAttribute("data-bs-target", "#add-modal");
 
-    container.appendChild(buttonRefresh);
-    container.appendChild(buttonAdd);
+    let openGroupingCountersModalButton = document.createElement("button");
+    openGroupingCountersModalButton.append("Grouping counters");
+    openGroupingCountersModalButton.onclick = () => {
+        createGroupingCountersModal();
+        fillGroupingCountersTable();
+    };
+    openGroupingCountersModalButton.className = "btn btn-secondary";
+    openGroupingCountersModalButton.setAttribute("data-bs-toggle", "modal");
+    openGroupingCountersModalButton.setAttribute("data-bs-target", "#grouping-counters-modal");
+
+    container.appendChild(refreshButton);
+    container.appendChild(addButton);
+    container.appendChild(openGroupingCountersModalButton);
     return container;
 }
 
@@ -32,9 +45,9 @@ function createTable() {
     let table = document.createElement('table');
     table.className = 'table table-hover';
 
+    let tableHeader = createTableHeader(["Id", "Key", "Value"]);
+    let tableBody = createTableBody('counter-table-body');
     let tableFooter = createTableFooter();
-    let tableHeader = createTableHeader();
-    let tableBody = createTableBody();
 
     table.appendChild(tableHeader);
     table.appendChild(tableBody);
@@ -43,7 +56,7 @@ function createTable() {
     return table;
 }
 
-function createModal() {
+function createAddModal() {
     let modal = document.createElement("div");
     modal.className = 'modal fade';
     modal.tabIndex = -1;
@@ -105,20 +118,22 @@ function createModal() {
     let footer = document.createElement("div");
     footer.className = 'modal-footer';
 
-    let buttonClose = document.createElement("button");
-    buttonClose.className = 'btn btn-secondary';
-    buttonClose.setAttribute('data-bs-dismiss', 'modal')
-    buttonClose.append('Close');
+    let closeButton = document.createElement("button");
+    closeButton.className = 'btn btn-secondary';
+    closeButton.setAttribute('data-bs-dismiss', 'modal')
+    closeButton.append('Close');
 
-    let buttonAdd = document.createElement("button");
-    buttonAdd.className = 'btn btn-primary';
-    buttonAdd.onclick = () => submitForm();
-    buttonAdd.setAttribute('data-bs-dismiss', 'modal')
-    buttonAdd.append('Save');
+    let addButton = document.createElement("button");
+    addButton.className = 'btn btn-primary';
+    addButton.onclick = () => submitForm();
+    addButton.setAttribute('data-bs-dismiss', 'modal')
+    addButton.append('Save');
 
     modal.appendChild(modalDialog);
 
     modalDialog.appendChild(modalContent);
+
+    modalHeader.appendChild(h5);
 
     modalContent.appendChild(modalHeader)
     modalContent.appendChild(body);
@@ -134,12 +149,97 @@ function createModal() {
 
     modalContent.appendChild(footer);
 
-    footer.appendChild(buttonClose);
-    footer.appendChild(buttonAdd);
+    footer.appendChild(closeButton);
+    footer.appendChild(addButton);
+
+    return modal;
+}
+
+function createGroupingCountersModal() {
+    let modal = document.createElement("div");
+    modal.className = 'modal fade';
+    modal.tabIndex = -1;
+    modal.id = 'grouping-counters-modal'
+    modal.setAttribute('role', 'dialog')
+    modal.setAttribute('aria-labelledby', 'groupingCountersModalLabel')
+    modal.ariaHidden = 'true';
+
+    let modalDialog = document.createElement("div");
+    modalDialog.className = 'modal-dialog';
+
+    let modalContent = document.createElement("div");
+    modalContent.className = 'modal-content';
+
+    let modalHeader = document.createElement("div");
+    modalHeader.className = 'modal-header';
+
+    let h5 = document.createElement("h5");
+    h5.className = 'modal-title';
+    h5.id = 'groupingCountersModalLabel';
+    h5.append('Grouping counters');
+
+    let body = document.createElement("div");
+    body.className = 'modal-body';
+
+    let table = document.createElement("table");
+    table.className = 'table table-hover';
+
+    let tableHeader = createTableHeader(["Key", "Count", "Count more then one"]);
+    let tableBody = createTableBody('grouping-counters-table-body');
+
+    let footer = document.createElement("div");
+    footer.className = 'modal-footer';
+
+    let closeButton = document.createElement("button");
+    closeButton.className = 'btn btn-secondary';
+    closeButton.setAttribute('data-bs-dismiss', 'modal')
+    closeButton.append('Close');
+
+    modal.appendChild(modalDialog);
+
+    modalDialog.appendChild(modalContent);
 
     modalHeader.appendChild(h5);
 
+    table.appendChild(tableHeader);
+    table.appendChild(tableBody);
+    body.appendChild(table);
+
+    modalContent.appendChild(modalHeader)
+    modalContent.appendChild(body);
+
+    modalContent.appendChild(footer);
+
+    footer.appendChild(closeButton);
+
     return modal;
+}
+
+function fillGroupingCountersTable() {
+    let groupingCountersPromise = getGroupingCounters();
+    let body = document.getElementById('grouping-counters-table-body');
+
+    body.innerHTML = "";
+
+    groupingCountersPromise.then((groupingCounters) => {
+        for (let i = 0; i < groupingCounters.length; i++) {
+            let counter = groupingCounters[i];
+            let row = document.createElement("tr");
+            let cell1 = document.createElement("td");
+            let cell2 = document.createElement("td");
+            let cell3 = document.createElement("td");
+
+            cell1.append(counter.key);
+            cell2.append(counter.count);
+            cell3.append(counter.countValueMoreThenOne);
+
+            row.appendChild(cell1);
+            row.appendChild(cell2);
+            row.appendChild(cell3);
+
+            body.appendChild(row)
+        }
+    });
 }
 
 function refreshPager() {
@@ -200,31 +300,26 @@ function refreshTable(skip) {
     });
 }
 
-function createTableHeader() {
+function createTableHeader(cellHeaders) {
     let header = document.createElement("thead");
     header.className = 'thead';
 
     let headerRow = document.createElement("tr");
-    let cell1 = document.createElement("th");
-    let cell2 = document.createElement("th");
-    let cell3 = document.createElement("th");
 
-    cell1.append("Id");
-    cell2.append("Key");
-    cell3.append("Value");
-
-    headerRow.appendChild(cell1);
-    headerRow.appendChild(cell2);
-    headerRow.appendChild(cell3);
+    for (let i = 0; i < cellHeaders.length; i++) {
+        let cell = document.createElement("th");
+        cell.append(cellHeaders[i]);
+        headerRow.appendChild(cell);
+    }
 
     header.appendChild(headerRow);
 
     return header;
 }
 
-function createTableBody() {
+function createTableBody(id) {
     let body = document.createElement("tbody");
-    body.id = 'counter-table-body';
+    body.id = id;
     return body;
 }
 
@@ -307,6 +402,10 @@ async function getPageCount(recordCount) {
     return await fetch(`home/GetPageCount?recordCount=${recordCount}`).then(value => value.json());
 }
 
+async function getGroupingCounters() {
+    return await fetch(`home/GetGroupingCounters`).then(value => value.json());
+}
+
 function submitForm() {
     let form = document.getElementById('counter-form');
     let data = {
@@ -321,6 +420,9 @@ function submitForm() {
         },
         body: JSON.stringify(data)
     })
-        .then(response => refreshTable(0))
+        .then(() => {
+            refreshTable(0);
+            refreshPager()
+        })
         .catch(error => console.log(error));
 }

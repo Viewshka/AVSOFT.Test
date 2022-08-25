@@ -38,4 +38,18 @@ public class CounterRepository
 
         return (int) Math.Ceiling((double) countersCount / recordCount);
     }
+
+    public async Task<IEnumerable<GroupingCounterDto>> GetGroupingCountersAsync()
+    {
+        return await _context.Counters
+            .GroupBy(counter => counter.Key)
+            .Select(counters => new GroupingCounterDto
+            {
+                Key = counters.Key,
+                CountValueMoreThenOne = counters.Max(counter => counter.Value),
+                Count = counters.Count(counter => counter.Value > 1)
+            })
+            .OrderBy(counter => counter.Key)
+            .ToListAsync();
+    }
 }

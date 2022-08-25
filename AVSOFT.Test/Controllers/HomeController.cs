@@ -35,4 +35,10 @@ public class HomeController : Controller
     {
         return Ok(await _counterRepository.AddCounterAsync(counter));
     }
+
+    [HttpGet]
+    public async Task<IActionResult> GetGroupingCountersAsync()
+    {
+        return Ok(await _counterRepository.GetGroupingCountersAsync());
+    }
 }
